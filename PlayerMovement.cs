@@ -4,8 +4,12 @@ public class PlayerMovement : MonoBehaviour
 {
     public float MoveSpeed = 5f;
     public float jumpForce = 10f;
+    public float jumpHoldForce = 25f;
+    public float maxJumpHoldTime = 0.25f;
     private Rigidbody2D rb;
     private bool isGrounded;
+    private bool isJumping =false;
+    private float jumpHoldTimer = 0f; 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -15,12 +19,32 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        float moveImput = Input.GetAxis("Horizontal");
-        rb.linearVelocity = new Vector2(moveImput * MoveSpeed, rb.linearVelocity.y);
+        float moveInput = (Input.GetKey(KeyCode.A) ? -1f : 0f) + (Input.GetKey(KeyCode.D) ? 1f : 0f);
+        rb.linearVelocity = new Vector2(moveInput * MoveSpeed, rb.linearVelocity.y);
 
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        if (Input.GetKeyDown(KeyCode.W) && isGrounded)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            isJumping = true; 
+            jumpHoldTimer = 0f;
+        }
+
+        if(Input.GetKey(KeyCode.W) && isJumping)
+        {
+            if (jumpHoldTimer < maxJumpHoldTime)
+            {
+                jumpHoldTimer += Time.deltaTime;
+                jumpHoldTimer = Mathf.Clamp(jumpHoldTimer, 0f, maxJumpHoldTime);
+            }
+
+        }
+        if (Input.GetKeyUp(KeyCode.W) && isJumping)
+        {
+            
+            float chargePercent = jumpHoldTimer / maxJumpHoldTime; 
+            float totalForce = jumpForce + (jumpHoldForce*chargePercent);
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, totalForce);
+            isJumping = false;
+            jumpHoldTimer = 0f;
         }
     }
 
@@ -37,6 +61,8 @@ public class PlayerMovement : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = false;
+            isJumping = false;
+            jumpHoldTimer = 0f;
         }
 
     }
